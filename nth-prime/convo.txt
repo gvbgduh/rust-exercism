@@ -1,0 +1,41 @@
+Hi guys, I've seen a nice solution for the _Nth prime number_ problem. I wonder if you could explain how it works
+```pub fn nth(n: u32) -> Option<u32> {
+    (2u32..).filter(|x| is_prime(x)).nth(n as usize)
+}
+
+fn is_prime(n: &u32) -> bool {
+    !(2..n - 1).any(|y| n % y == 0)
+}```
+especially in `(2u32..)....nth(n as usize)`
+
+
+Jon   [11 hours ago]
+I'm not 100% clear what parts are unclear to you, but the parts that strike me as not necessarily obvious to someone new to rust:
+1. `(2u32..)` is a literal for a `RangeFrom` instance where the data type of the range is 32-bit unsigned integers (`u32`). This range starts with `2`, but has no upper bound. This is OK because it's used as an iterator and since iterators are evaluated lazily, it only generates as many value as is necessary to satisfy the `nth` call at the end of the iterator chain. See http://doc.rust-lang.org/1.32.0/core/ops/struct.RangeFrom.html
+2. The `nth` call is one of the methods available on any type that implements `Iterator`. See http://doc.rust-lang.org/1.32.0/std/iter/trait.Iterator.html#method.nth. It can be called here because `RangeFrom` implements `Iterator` and `filter` is a method of `Iterator` that also returns a type that implements `Iterator`. The cast `as usize` is necessary because `Iterator::nth` takes a `usize`, but the argument `n` to this function `nth` takes a `u32`.
+:RangeFrom - Rust
+API documentation for the Rust `RangeFrom` struct in crate `core`.
+doc.rust-lang.org
+std::iter::Iterator - Rust
+API documentation for the Rust `Iterator` trait in crate `std`.
+
+
+Jon   [10 hours ago]
+Personally, I'd change a few things about that function:
+```pub fn nth_prime(n: usize) -> u32 {
+    (2..).filter(is_prime).nth(n).unwrap()
+}```
+1. The name `nth` is confusing with the `Iterator` method; `nth_prime` is more indicative. Alternatively, implementing it on a struct named `Prime` could give you `Prime::nth` which would be clearer.
+2. There's no need to specify the range as `(2u32..)`. Since the type of integer can be inferred from the `u32` in the return of the function signature.
+3. Since `is_prime` is already a function that takes one argument and returns a `bool`, you can use that function directly as an argument to `filter`, there's no need to create a closure since there's not translation necessary and no other values to capture. The argument that `Iterator::filter` accepts is `FnMut(&Self::Item) -> bool`. It can be satisfied by either a closure or a function pointer. See http://doc.rust-lang.org/1.32.0/std/ops/trait.FnMut.html for more.
+4. If we change the argument to `nth_prime` to type `usize`, there's no need to cast it when passing it it `Iterator::nth`. In fact, if `usize` isn't a `u32` on whatever platform this is running on, that cast is potentially dangerous. If `usize` has a smaller range than `u32` the cast will give wrong answers for values of `n` bigger than `usize` can represent. And if `usize` has an equal or larger range, there's really no point in using `u32` for the `n` parameter in the first place.
+5. Since `n` is unsigned and the nth prime number exists for all positive `n`, there's no reason to return an `Option<u32>` rather than a `u32`. In general, `Iterator::nth` has to return an option because it may be called with a value greater than the number of elements passed into it, but with an infinite input stream provided by `RangeFrom`, that's not an issue and this code will never return `None`, so we might as well just return a `u32`.
+doc.rust-lang.org
+std::ops::FnMut - Rust
+API documentation for the Rust `FnMut` trait in crate `std`.
+
+Jon   [10 hours ago]
+There is a bug there, though. This implementation will give wrong answers due to overflow. This is easy to see if you change the `u32`s to `u8`s and request a prime that's larger than a `u8` can represent. See what happens in debug and release modes on this playground: https://play.rust-lang.org/?version=stable&mode=release&edition=2018&gist=5c4e0b813d6a588a2e1aa65526d38ee5
+
+Jon   [10 hours ago]
+If you wanted to account for the overflow case, then it *would* make sense to return `Option<u32>`, but I'll leave that for you to figure out if you're interested.
