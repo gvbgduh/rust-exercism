@@ -1,5 +1,3 @@
-
-
 pub mod graph {
     use std::collections::HashMap;
     type Attrs = HashMap<String, String>;
@@ -16,23 +14,33 @@ pub mod graph {
         pub mod node {
             use crate::graph::{to_attrs, Attrs, AttrsArgs};
 
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone, PartialEq)]
             pub struct Node {
-                label: String,
-                attrs: Attrs,
+                pub label: String,
+                pub attrs: Attrs,
             }
 
+            // impl PartialEq for Node {
+            //     fn eq(&self, other: &Node) -> bool {
+            //         self.label == other.label
+            //     }
+            // }
+
             impl Node {
-                pub fn new(label: &str) -> Node {
+                pub fn new(label: &str) -> Self {
                     Node {
                         label: label.to_string(),
                         attrs: Attrs::new(),
                     }
                 }
 
-                pub fn with_attrs(&mut self, attrs: AttrsArgs) -> &mut Self {
+                pub fn with_attrs(mut self, attrs: AttrsArgs) -> Self {
                     self.attrs = to_attrs(attrs);
                     self
+                }
+
+                pub fn get_attr(&self, key: &str) -> Option<&str> {
+                    self.attrs.get(key).map(|x| x.as_ref())
                 }
             }
         }
@@ -40,21 +48,27 @@ pub mod graph {
         pub mod edge {
             use crate::graph::{to_attrs, Attrs, AttrsArgs};
 
-            #[derive(Debug, Clone)]
+            #[derive(Debug, Clone, PartialEq)]
             pub struct Edge {
-                nodes: (String, String),
+                nodes: [&'static str; 2],
                 attrs: Attrs,
             }
 
             impl Edge {
-                pub fn new(node_1: &str, node_2: &str) -> Edge {
+                pub fn new(node_1: &'static str, node_2: &'static str) -> Edge {
                     Edge {
-                        nodes: (node_1.to_string(), node_2.to_string()),
+                        nodes: [node_1, node_2],
                         attrs: Attrs::new(),
                     }
                 }
 
-                pub fn with_attrs(&mut self, attrs: AttrsArgs) -> &mut Self {
+                // impl PartialEq for Edge {
+                //     fn eq(&self, other: &Edge) -> bool {
+                //         self.nodes == other.nodes
+                //     }
+                // }
+
+                pub fn with_attrs(mut self, attrs: AttrsArgs) -> Self {
                     self.attrs = to_attrs(attrs);
                     self
                 }
@@ -81,19 +95,28 @@ pub mod graph {
             }
         }
 
-        pub fn with_nodes(&mut self, nodes: &[Node]) -> &mut Self {
+        pub fn with_nodes(mut self, nodes: &[Node]) -> Self {
             self.nodes.extend(nodes.iter().cloned());
             self
         }
 
-        pub fn with_attrs(&mut self, attrs: AttrsArgs) -> &mut Self {
+        pub fn with_attrs(mut self, attrs: AttrsArgs) -> Self {
             self.attrs = to_attrs(attrs);
             self
         }
 
-        pub fn with_edges(&mut self, edges: &[Edge]) -> &mut Self {
+        pub fn with_edges(mut self, edges: &[Edge]) -> Self {
             self.edges.extend(edges.iter().cloned());
             self
+        }
+
+        pub fn get_node(&self, name: &str) -> Option<Node> {
+            for node in self.nodes.iter() {
+                if node.label == name {
+                    return Some(node.clone())
+                }
+            }
+            None
         }
     }
 }
