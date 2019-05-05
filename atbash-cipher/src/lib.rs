@@ -1,14 +1,17 @@
 use std::str;
 
+fn swap_the_letter(letter: char) -> Option<char> {
+    match letter as u8 {
+        b'a'..=b'z' => Some((b'a' + b'z' - letter as u8) as char),
+        b'0'..=b'9' => Some(letter as char),
+        _ => None
+    }
+}
+
 /// "Encipher" with the Atbash cipher.
 pub fn encode(plain: &str) -> String {
-    let l = plain.to_lowercase()
-                 .chars()
-                 .filter_map(|letter| match letter as u8 {
-                    97..=122 => Some((97 + 122 - letter as u8) as char),
-                    48..=57 => Some(letter as char),
-                    _ => None
-                 })
+    let l = plain.chars()
+                 .filter_map(|letter| swap_the_letter(letter.to_ascii_lowercase()))
                  .collect::<String>();
 
     l.as_bytes()
@@ -21,12 +24,7 @@ pub fn encode(plain: &str) -> String {
 
 /// "Decipher" with the Atbash cipher.
 pub fn decode(cipher: &str) -> String {
-    cipher.to_lowercase()
-        .chars()
-        .filter_map(|letter| match letter as u8 {
-        97..=122 => Some((97 + 122 - letter as u8) as char),
-        48..=57 => Some(letter as char),
-        _ => None
-        })
-        .collect::<String>()
+    cipher.chars()
+          .filter_map(|letter| swap_the_letter(letter.to_ascii_lowercase()))
+          .collect::<String>()
 }

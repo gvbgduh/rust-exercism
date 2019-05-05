@@ -1,11 +1,11 @@
-#[derive(Debug)]
+#[derive(Clone)]
 pub struct SimpleLinkedList<T> {
     head: Link<T>,
 }
 
 type Link<T> = Option<Box<Node<T>>>;
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct Node<T> {
     elem: T,
     next: Link<T>,
@@ -53,9 +53,9 @@ impl<T> SimpleLinkedList<T> {
     }
 
 
-    // pub fn into_iter(self) -> IntoIter<T> {
-    //     IntoIter(self)
-    // }
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self)
+    }
 }
 
 pub struct IntoIter<T>(SimpleLinkedList<T>);
@@ -64,15 +64,6 @@ impl<T> Iterator for IntoIter<T> {
     type Item = T;
     fn next(&mut self) -> Option<Self::Item> {
         self.0.pop()
-    }
-}
-
-impl<T> IntoIterator for SimpleLinkedList<T> {
-    type Item = T;
-    type IntoIter = IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IntoIter(self)
     }
 }
 
